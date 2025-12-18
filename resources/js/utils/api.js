@@ -78,4 +78,29 @@ export const customizationApi = {
     getPresets: () => api.get('/template-presets'),
 };
 
+// Template Builder
+export const templateBuilderApi = {
+    getAll: () => api.get('/template-builder'),
+    getStructure: (id) => api.get(`/template-builder/${id}`),
+    create: (data) => api.post('/template-builder', data),
+    update: (id, data) => api.put(`/template-builder/${id}`, data),
+    delete: (id) => api.delete(`/template-builder/${id}`),
+    duplicate: (id) => api.post(`/template-builder/${id}/duplicate`),
+};
+
+// AI Enhancement
+export const aiApi = {
+    enhance: (text) => api.post('/ai/enhance', { text }),
+    enhanceBatch: (texts) => api.post('/ai/enhance-batch', { texts }),
+    getRateLimit: () => api.get('/ai/rate-limit'),
+};
+
+// AI Wizard
+export const wizardApi = {
+    getStep: (step, data = {}) => api.get('/wizard/step', { params: { step, data } }),
+    processInput: (step, value, data) => api.post('/wizard/process', { step, value, data }),
+    enhance: (text, type, cvType) => api.post('/wizard/enhance', { text, type, cv_type: cvType }),
+    createResume: (data) => api.post('/wizard/create-resume', { data }),
+};
+
 export default api;

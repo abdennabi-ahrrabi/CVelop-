@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreResumeRequest;
+use App\Http\Requests\UpdateResumeRequest;
 use App\Models\Resume;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,6 +19,7 @@ class ResumeController extends Controller
     {
         $resumes = $request->user()
             ->resumes()
+            ->with('template:id,name,slug,thumbnail')
             ->withCount(['workExperiences', 'educations', 'skills'])
             ->latest()
             ->get();
@@ -30,20 +33,9 @@ class ResumeController extends Controller
     /**
      * Store a newly created resume.
      */
-    public function store(Request $request): JsonResponse
+    public function store(StoreResumeRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'template_id' => 'nullable|integer',
-            'personal_info' => 'nullable|array',
-            'personal_info.full_name' => 'nullable|string|max:255',
-            'personal_info.email' => 'nullable|email|max:255',
-            'personal_info.phone' => 'nullable|string|max:50',
-            'personal_info.address' => 'nullable|string|max:500',
-            'personal_info.summary' => 'nullable|string|max:1000',
-        ]);
-
-        $resume = $request->user()->resumes()->create($validated);
+        $resume = $request->user()->resumes()->create($request->validated());
 
         return response()->json([
             'success' => true,
@@ -75,22 +67,9 @@ class ResumeController extends Controller
     /**
      * Update the specified resume.
      */
-    public function update(Request $request, Resume $resume): JsonResponse
+    public function update(UpdateResumeRequest $request, Resume $resume): JsonResponse
     {
-        Gate::authorize('update', $resume);
-
-        $validated = $request->validate([
-            'title' => 'sometimes|required|string|max:255',
-            'template_id' => 'nullable|integer',
-            'personal_info' => 'nullable|array',
-            'personal_info.full_name' => 'nullable|string|max:255',
-            'personal_info.email' => 'nullable|email|max:255',
-            'personal_info.phone' => 'nullable|string|max:50',
-            'personal_info.address' => 'nullable|string|max:500',
-            'personal_info.summary' => 'nullable|string|max:1000',
-        ]);
-
-        $resume->update($validated);
+        $resume->update($request->validated());
 
         return response()->json([
             'success' => true,

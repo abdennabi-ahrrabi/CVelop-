@@ -35,4 +35,20 @@ return [
         ],
     ],
 
+    'gemini' => [
+        'api_key' => env('GEMINI_API_KEY'),
+        'model' => env('GEMINI_MODEL', 'gemini-2.0-flash'),
+        'rate_limit' => env('GEMINI_RATE_LIMIT', 50),
+    ],
+
+    'groq' => [
+        'api_key' => env('GROQ_API_KEY'),
+        'model' => env('GROQ_MODEL', 'llama-3.1-8b-instant'),
+        'rate_limit' => env('GROQ_RATE_LIMIT', 50),
+    ],
+
+    'ai' => [
+        'provider' => env('AI_PROVIDER', 'groq'), // 'groq' or 'gemini'
+    ],
+
 ];

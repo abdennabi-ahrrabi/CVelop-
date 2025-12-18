@@ -9,6 +9,39 @@ use Illuminate\Http\Request;
 
 class PdfExportController extends Controller
 {
+    /**
+     * Get default customization values from config
+     */
+    private function getDefaultCustomization(): object
+    {
+        $defaults = config('cv-builder.defaults');
+
+        return (object) [
+            'primary_color' => $defaults['colors']['primary'],
+            'secondary_color' => $defaults['colors']['secondary'],
+            'accent_color' => $defaults['colors']['accent'],
+            'text_color' => $defaults['colors']['text'],
+            'background_color' => $defaults['colors']['background'],
+            'sidebar_bg_color' => $defaults['colors']['sidebar_bg'],
+            'font_family' => $defaults['typography']['font_family'],
+            'font_size' => $defaults['typography']['font_size'],
+            'line_height' => $defaults['typography']['line_height'],
+            'page_padding' => $defaults['spacing']['page_padding'],
+            'section_spacing' => $defaults['spacing']['section_spacing'],
+            'item_spacing' => $defaults['spacing']['item_spacing'],
+            'layout_type' => $defaults['layout']['layout_type'],
+            'sidebar_width' => $defaults['layout']['sidebar_width'],
+            'show_photo' => $defaults['visibility']['show_photo'],
+            'show_summary' => $defaults['visibility']['show_summary'],
+            'show_skills' => $defaults['visibility']['show_skills'],
+            'show_experience' => $defaults['visibility']['show_experience'],
+            'show_education' => $defaults['visibility']['show_education'],
+            'show_contact' => $defaults['visibility']['show_contact'],
+            'border_radius' => $defaults['borders']['border_radius'],
+            'border_width' => $defaults['borders']['border_width'],
+        ];
+    }
+
     public function download(Resume $resume)
     {
         // Ensure user owns the resume
@@ -23,30 +56,7 @@ class PdfExportController extends Controller
         $templateSlug = $resume->template?->slug ?? 'modern';
 
         // Get customization or use defaults
-        $customization = $resume->customization ?? (object)[
-            'primary_color' => '#3498DB',
-            'secondary_color' => '#2C3E50',
-            'accent_color' => '#1A2332',
-            'text_color' => '#2C3E50',
-            'background_color' => '#FFFFFF',
-            'sidebar_bg_color' => null,
-            'font_family' => 'DejaVu Serif',
-            'font_size' => 10,
-            'line_height' => 1.5,
-            'page_padding' => 30,
-            'section_spacing' => 25,
-            'item_spacing' => 15,
-            'layout_type' => 'two_column',
-            'sidebar_width' => 35,
-            'show_photo' => true,
-            'show_summary' => true,
-            'show_skills' => true,
-            'show_experience' => true,
-            'show_education' => true,
-            'show_contact' => true,
-            'border_radius' => 4,
-            'border_width' => 2,
-        ];
+        $customization = $resume->customization ?? $this->getDefaultCustomization();
 
         // Generate PDF with the selected template
         $pdf = Pdf::loadView("pdf.templates.{$templateSlug}", [
@@ -74,30 +84,7 @@ class PdfExportController extends Controller
         $templateSlug = $resume->template?->slug ?? 'modern';
 
         // Get customization or use defaults
-        $customization = $resume->customization ?? (object)[
-            'primary_color' => '#3498DB',
-            'secondary_color' => '#2C3E50',
-            'accent_color' => '#1A2332',
-            'text_color' => '#2C3E50',
-            'background_color' => '#FFFFFF',
-            'sidebar_bg_color' => null,
-            'font_family' => 'DejaVu Serif',
-            'font_size' => 10,
-            'line_height' => 1.5,
-            'page_padding' => 30,
-            'section_spacing' => 25,
-            'item_spacing' => 15,
-            'layout_type' => 'two_column',
-            'sidebar_width' => 35,
-            'show_photo' => true,
-            'show_summary' => true,
-            'show_skills' => true,
-            'show_experience' => true,
-            'show_education' => true,
-            'show_contact' => true,
-            'border_radius' => 4,
-            'border_width' => 2,
-        ];
+        $customization = $resume->customization ?? $this->getDefaultCustomization();
 
         // Generate PDF and stream it
         $pdf = Pdf::loadView("pdf.templates.{$templateSlug}", [
@@ -112,6 +99,9 @@ class PdfExportController extends Controller
     {
         // Find the template
         $template = Template::where('slug', $templateSlug)->firstOrFail();
+
+        // Default customization for preview
+        $customization = $this->getDefaultCustomization();
 
         // Create a sample resume object with demo data
         $sampleResume = (object) [
@@ -214,6 +204,7 @@ class PdfExportController extends Controller
         // Generate PDF with the selected template and sample data
         $pdf = Pdf::loadView("pdf.templates.{$templateSlug}", [
             'resume' => $sampleResume,
+            'customization' => $customization,
         ])->setPaper('a4');
 
         return $pdf->stream('Sample_Resume_' . $template->name . '.pdf');

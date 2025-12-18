@@ -4,10 +4,20 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title>{{ $resume->title }}</title>
     <style>
+        @page {
+            margin: 0;
+            padding: 0;
+        }
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+        }
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
         }
         body {
             font-family: '{{ $customization->font_family ?? "DejaVu Sans" }}', Arial, sans-serif;

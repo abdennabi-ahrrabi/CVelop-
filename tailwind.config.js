@@ -14,6 +14,12 @@ export default {
         extend: {
             fontFamily: {
                 sans: ['Figtree', ...defaultTheme.fontFamily.sans],
+                inter: ['Inter', ...defaultTheme.fontFamily.sans],
+                poppins: ['Poppins', ...defaultTheme.fontFamily.sans],
+                playfair: ['Playfair Display', ...defaultTheme.fontFamily.serif],
+                montserrat: ['Montserrat', ...defaultTheme.fontFamily.sans],
+                roboto: ['Roboto', ...defaultTheme.fontFamily.sans],
+                outfit: ['Outfit', ...defaultTheme.fontFamily.sans],
             },
         },
     },

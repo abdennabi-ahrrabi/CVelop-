@@ -1,3 +1,267 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ============================================
+   Business Card Glassmorphism Design System
+   ============================================ */
+
+@layer utilities {
+    /* ----------------------------------------
+       Entrance Animations
+       ---------------------------------------- */
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes scaleIn {
+        from {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+    }
+
+    /* ----------------------------------------
+       Background Animations
+       ---------------------------------------- */
+    @keyframes aurora {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
+    @keyframes prism {
+        0% { filter: hue-rotate(0deg); }
+        100% { filter: hue-rotate(360deg); }
+    }
+
+    @keyframes shimmer {
+        0% { background-position: -200% 0; }
+        100% { background-position: 200% 0; }
+    }
+
+    @keyframes pulse-glow {
+        0%, 100% { opacity: 0.5; }
+        50% { opacity: 0.8; }
+    }
+
+    /* ----------------------------------------
+       Animation Utility Classes
+       ---------------------------------------- */
+    .animate-fadeIn {
+        animation: fadeIn 0.6s ease-out forwards;
+    }
+
+    .animate-slideUp {
+        animation: slideUp 0.6s ease-out forwards;
+    }
+
+    .animate-scaleIn {
+        animation: scaleIn 0.5s ease-out forwards;
+    }
+
+    .animate-float {
+        animation: float 3s ease-in-out infinite;
+    }
+
+    .animate-aurora {
+        background-size: 400% 400%;
+        animation: aurora 15s ease infinite;
+    }
+
+    .animate-prism {
+        animation: prism 10s linear infinite;
+    }
+
+    .animate-shimmer {
+        background-size: 200% 100%;
+        animation: shimmer 2s linear infinite;
+    }
+
+    .animate-pulse-glow {
+        animation: pulse-glow 3s ease-in-out infinite;
+    }
+
+    /* ----------------------------------------
+       Hover Effect Classes
+       ---------------------------------------- */
+    .hover-lift {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .hover-lift:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    }
+
+    .hover-glow {
+        transition: box-shadow 0.3s ease;
+    }
+    .hover-glow:hover {
+        box-shadow: 0 0 30px var(--glow-color, rgba(139, 92, 246, 0.5));
+    }
+
+    .hover-scale {
+        transition: transform 0.3s ease;
+    }
+    .hover-scale:hover {
+        transform: scale(1.02);
+    }
+
+    .hover-tilt {
+        transition: transform 0.3s ease;
+        transform-style: preserve-3d;
+    }
+    .hover-tilt:hover {
+        transform: perspective(1000px) rotateX(2deg) rotateY(-2deg);
+    }
+
+    /* ----------------------------------------
+       Glassmorphism Utilities
+       ---------------------------------------- */
+    .glass-card {
+        backdrop-filter: blur(var(--glass-blur, 12px));
+        -webkit-backdrop-filter: blur(var(--glass-blur, 12px));
+        background: rgba(255, 255, 255, var(--glass-opacity, 0.1));
+        border: var(--glass-border-width, 1px) solid rgba(255, 255, 255, var(--glass-border-opacity, 0.2));
+    }
+
+    .glass-card-dark {
+        backdrop-filter: blur(var(--glass-blur, 12px));
+        -webkit-backdrop-filter: blur(var(--glass-blur, 12px));
+        background: rgba(0, 0, 0, var(--glass-opacity, 0.2));
+        border: var(--glass-border-width, 1px) solid rgba(255, 255, 255, var(--glass-border-opacity, 0.1));
+    }
+
+    /* Fallback for browsers without backdrop-filter support */
+    @supports not (backdrop-filter: blur(12px)) {
+        .glass-card {
+            background: rgba(255, 255, 255, 0.9);
+        }
+        .glass-card-dark {
+            background: rgba(0, 0, 0, 0.85);
+        }
+    }
+
+    /* ----------------------------------------
+       Shadow Intensity Classes
+       ---------------------------------------- */
+    .shadow-none-custom {
+        box-shadow: none;
+    }
+
+    .shadow-subtle {
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05),
+                    0 2px 4px -2px rgba(0, 0, 0, 0.05);
+    }
+
+    .shadow-medium {
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+                    0 4px 6px -4px rgba(0, 0, 0, 0.1);
+    }
+
+    .shadow-strong {
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    }
+
+    /* ----------------------------------------
+       Border Glow Effects
+       ---------------------------------------- */
+    .border-glow {
+        position: relative;
+    }
+    .border-glow::before {
+        content: '';
+        position: absolute;
+        inset: -2px;
+        background: linear-gradient(
+            45deg,
+            var(--glow-color-1, #8b5cf6),
+            var(--glow-color-2, #06b6d4),
+            var(--glow-color-1, #8b5cf6)
+        );
+        border-radius: inherit;
+        z-index: -1;
+        opacity: 0.5;
+        filter: blur(8px);
+        animation: prism 6s linear infinite;
+    }
+
+    /* ----------------------------------------
+       Rainbow Border (for Prism template)
+       ---------------------------------------- */
+    .rainbow-border {
+        position: relative;
+        z-index: 0;
+    }
+    .rainbow-border::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        padding: 2px;
+        border-radius: inherit;
+        background: linear-gradient(
+            90deg,
+            #ff0000, #ff8000, #ffff00, #80ff00,
+            #00ff00, #00ff80, #00ffff, #0080ff,
+            #0000ff, #8000ff, #ff00ff, #ff0080, #ff0000
+        );
+        background-size: 400% 100%;
+        -webkit-mask:
+            linear-gradient(#fff 0 0) content-box,
+            linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        animation: shimmer 3s linear infinite;
+    }
+
+    /* ----------------------------------------
+       Frosted Ice Effect (for Frost template)
+       ---------------------------------------- */
+    .frost-effect {
+        background:
+            linear-gradient(135deg,
+                rgba(255, 255, 255, 0.3) 0%,
+                rgba(255, 255, 255, 0.1) 50%,
+                rgba(255, 255, 255, 0.2) 100%
+            );
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+    }
+
+    /* ----------------------------------------
+       Aurora Gradient Background
+       ---------------------------------------- */
+    .aurora-bg {
+        background: linear-gradient(
+            -45deg,
+            var(--aurora-color-1, #ee7752),
+            var(--aurora-color-2, #e73c7e),
+            var(--aurora-color-3, #23a6d5),
+            var(--aurora-color-4, #23d5ab)
+        );
+        background-size: 400% 400%;
+        animation: aurora 15s ease infinite;
+    }
+}

@@ -59,47 +59,34 @@ export default function TemplateCustomizer({ resumeId, resume, onClose, onUpdate
             setSaving(true);
             await customizationApi.update(resumeId, customization);
             setHasChanges(false);
-            if (onUpdate) onUpdate();
-            alert('Customization saved successfully!');
         } catch (error) {
             console.error('Error saving customization:', error);
-            alert('Failed to save customization');
         } finally {
             setSaving(false);
         }
     };
 
     const handleReset = async () => {
-        if (!confirm('Are you sure you want to reset to default settings?')) return;
-
         try {
             setSaving(true);
             await customizationApi.reset(resumeId);
             await fetchCustomization();
             setHasChanges(false);
-            if (onUpdate) onUpdate();
-            alert('Reset to defaults successfully!');
         } catch (error) {
             console.error('Error resetting customization:', error);
-            alert('Failed to reset customization');
         } finally {
             setSaving(false);
         }
     };
 
     const applyPreset = async (presetId) => {
-        if (!confirm(`Apply "${presetId.replace(/_/g, ' ')}" preset?`)) return;
-
         try {
             setSaving(true);
             await customizationApi.applyPreset(resumeId, presetId);
             await fetchCustomization();
             setHasChanges(false);
-            if (onUpdate) onUpdate();
-            alert('Preset applied successfully!');
         } catch (error) {
             console.error('Error applying preset:', error);
-            alert('Failed to apply preset');
         } finally {
             setSaving(false);
         }

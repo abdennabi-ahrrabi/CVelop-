@@ -1,9 +1,5 @@
-import { useState } from 'react';
-import InputLabel from '@/Components/InputLabel';
-import TextInput from '@/Components/TextInput';
-import InputError from '@/Components/InputError';
-import PrimaryButton from '@/Components/PrimaryButton';
-import { workExperienceApi } from '@/utils/api';
+import { useState, useEffect } from 'react';
+import { workExperienceApi, aiApi } from '@/utils/api';
 
 export default function WorkExperienceForm({ resumeId, experiences = [], onUpdate }) {
     const [items, setItems] = useState(experiences);
@@ -18,18 +14,62 @@ export default function WorkExperienceForm({ resumeId, experiences = [], onUpdat
     });
     const [errors, setErrors] = useState({});
     const [saving, setSaving] = useState(false);
+    const [enhancing, setEnhancing] = useState(false);
+    const [rateLimit, setRateLimit] = useState(null);
+    const [showAiSuggestion, setShowAiSuggestion] = useState(false);
+    const [aiSuggestion, setAiSuggestion] = useState('');
+
+    useEffect(() => {
+        fetchRateLimit();
+    }, []);
+
+    const fetchRateLimit = async () => {
+        try {
+            const response = await aiApi.getRateLimit();
+            setRateLimit(response.data.data);
+        } catch (error) {
+            console.error('Failed to fetch rate limit:', error);
+        }
+    };
+
+    const handleAIEnhance = async () => {
+        if (!formData.description.trim()) return;
+        if (rateLimit && rateLimit.remaining_requests <= 0) {
+            alert('AI limit reached. Try again later.');
+            return;
+        }
+
+        setEnhancing(true);
+        setShowAiSuggestion(false);
+
+        try {
+            const response = await aiApi.enhance(formData.description);
+            if (response.data.success) {
+                setAiSuggestion(response.data.data.enhanced);
+                setShowAiSuggestion(true);
+                await fetchRateLimit();
+            }
+        } catch (error) {
+            alert(error.response?.data?.message || 'Failed to enhance text.');
+        } finally {
+            setEnhancing(false);
+        }
+    };
+
+    const applyAiSuggestion = () => {
+        setFormData({ ...formData, description: aiSuggestion });
+        setShowAiSuggestion(false);
+        setAiSuggestion('');
+    };
 
     const resetForm = () => {
         setFormData({
-            company: '',
-            position: '',
-            description: '',
-            start_date: '',
-            end_date: '',
-            is_current: false,
+            company: '', position: '', description: '', start_date: '', end_date: '', is_current: false,
         });
         setEditingId(null);
         setErrors({});
+        setShowAiSuggestion(false);
+        setAiSuggestion('');
     };
 
     const handleEdit = (experience) => {
@@ -42,6 +82,7 @@ export default function WorkExperienceForm({ resumeId, experiences = [], onUpdat
             is_current: experience.is_current,
         });
         setEditingId(experience.id);
+        setShowAiSuggestion(false);
     };
 
     const handleSubmit = async (e) => {
@@ -60,174 +101,185 @@ export default function WorkExperienceForm({ resumeId, experiences = [], onUpdat
             resetForm();
             if (onUpdate) onUpdate();
         } catch (error) {
-            if (error.response?.data?.errors) {
-                setErrors(error.response.data.errors);
-            }
+            if (error.response?.data?.errors) setErrors(error.response.data.errors);
         } finally {
             setSaving(false);
         }
     };
 
     const handleDelete = async (id) => {
-        if (!confirm('Are you sure you want to delete this work experience?')) return;
-
+        if (!confirm('Delete this work experience?')) return;
         try {
             await workExperienceApi.delete(resumeId, id);
             setItems(items.filter(item => item.id !== id));
             if (onUpdate) onUpdate();
         } catch (error) {
-            alert('Failed to delete work experience');
+            alert('Failed to delete');
         }
     };
 
     return (
-        <div className="space-y-6">
-            <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                <div className="p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                        Work Experience
-                    </h3>
+        <div className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-blue-600/20 to-cyan-600/20 border-b border-white/10 px-6 py-4">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center">
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 className="text-lg font-bold text-white">Work Experience</h3>
+                        <p className="text-sm text-gray-400">Add your professional experience</p>
+                    </div>
+                </div>
+            </div>
 
-                    {/* List of existing experiences */}
-                    {items.length > 0 && (
-                        <div className="mb-6 space-y-4">
-                            {items.map((exp) => (
-                                <div
-                                    key={exp.id}
-                                    className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-900"
-                                >
-                                    <div className="flex justify-between items-start">
-                                        <div className="flex-1">
-                                            <h4 className="font-semibold text-gray-900 dark:text-gray-100">
-                                                {exp.position}
-                                            </h4>
-                                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                                                {exp.company}
-                                            </p>
-                                            <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                                                {exp.start_date} - {exp.is_current ? 'Present' : exp.end_date}
-                                            </p>
-                                            {exp.description && (
-                                                <p className="mt-2 text-sm text-gray-700 dark:text-gray-300">
-                                                    {exp.description}
-                                                </p>
-                                            )}
-                                        </div>
-                                        <div className="flex gap-2 ml-4">
-                                            <button
-                                                onClick={() => handleEdit(exp)}
-                                                className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 text-sm font-medium"
-                                            >
-                                                Edit
-                                            </button>
-                                            <button
-                                                onClick={() => handleDelete(exp.id)}
-                                                className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 text-sm font-medium"
-                                            >
-                                                Delete
-                                            </button>
-                                        </div>
+            <div className="p-6 space-y-6">
+                {/* Existing Experiences */}
+                {items.length > 0 && (
+                    <div className="space-y-3">
+                        {items.map((exp) => (
+                            <div key={exp.id} className="rounded-xl bg-white/5 border border-white/10 p-4 hover:border-blue-500/50 transition-all">
+                                <div className="flex justify-between items-start">
+                                    <div className="flex-1">
+                                        <h4 className="font-bold text-white">{exp.position}</h4>
+                                        <p className="text-sm text-blue-400">{exp.company}</p>
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            {exp.start_date} - {exp.is_current ? 'Present' : exp.end_date}
+                                        </p>
+                                        {exp.description && <p className="mt-2 text-sm text-gray-400">{exp.description}</p>}
+                                    </div>
+                                    <div className="flex gap-2 ml-4">
+                                        <button onClick={() => handleEdit(exp)} className="px-3 py-1 text-xs font-medium text-violet-400 hover:text-violet-300 bg-violet-500/10 rounded-lg hover:bg-violet-500/20 transition-colors">
+                                            Edit
+                                        </button>
+                                        <button onClick={() => handleDelete(exp.id)} className="px-3 py-1 text-xs font-medium text-red-400 hover:text-red-300 bg-red-500/10 rounded-lg hover:bg-red-500/20 transition-colors">
+                                            Delete
+                                        </button>
                                     </div>
                                 </div>
-                            ))}
-                        </div>
-                    )}
-
-                    {/* Add/Edit form */}
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <InputLabel htmlFor="company" value="Company" />
-                                <TextInput
-                                    id="company"
-                                    value={formData.company}
-                                    onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                                    className="mt-1 block w-full"
-                                    required
-                                />
-                                <InputError message={errors.company} className="mt-2" />
                             </div>
+                        ))}
+                    </div>
+                )}
 
-                            <div>
-                                <InputLabel htmlFor="position" value="Position" />
-                                <TextInput
-                                    id="position"
-                                    value={formData.position}
-                                    onChange={(e) => setFormData({ ...formData, position: e.target.value })}
-                                    className="mt-1 block w-full"
-                                    required
-                                />
-                                <InputError message={errors.position} className="mt-2" />
-                            </div>
-
-                            <div>
-                                <InputLabel htmlFor="start_date" value="Start Date" />
-                                <TextInput
-                                    id="start_date"
-                                    type="date"
-                                    value={formData.start_date}
-                                    onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                                    className="mt-1 block w-full"
-                                    required
-                                />
-                                <InputError message={errors.start_date} className="mt-2" />
-                            </div>
-
-                            <div>
-                                <InputLabel htmlFor="end_date" value="End Date" />
-                                <TextInput
-                                    id="end_date"
-                                    type="date"
-                                    value={formData.end_date}
-                                    onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                                    className="mt-1 block w-full"
-                                    disabled={formData.is_current}
-                                />
-                                <InputError message={errors.end_date} className="mt-2" />
-                            </div>
-                        </div>
-
-                        <div className="flex items-center">
+                {/* Add/Edit Form */}
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-300 mb-2">Company</label>
                             <input
-                                id="is_current"
-                                type="checkbox"
-                                checked={formData.is_current}
-                                onChange={(e) => setFormData({ ...formData, is_current: e.target.checked, end_date: '' })}
-                                className="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:focus:ring-indigo-600 dark:focus:ring-offset-gray-800"
+                                type="text"
+                                value={formData.company}
+                                onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                                className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                placeholder="Company name"
+                                required
                             />
-                            <label htmlFor="is_current" className="ml-2 text-sm text-gray-600 dark:text-gray-400">
-                                I currently work here
-                            </label>
+                            {errors.company && <p className="mt-1 text-sm text-red-400">{errors.company}</p>}
                         </div>
 
                         <div>
-                            <InputLabel htmlFor="description" value="Description" />
-                            <textarea
-                                id="description"
-                                value={formData.description}
-                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                rows="3"
-                                className="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm"
-                            ></textarea>
-                            <InputError message={errors.description} className="mt-2" />
+                            <label className="block text-sm font-medium text-gray-300 mb-2">Position</label>
+                            <input
+                                type="text"
+                                value={formData.position}
+                                onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+                                className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                placeholder="e.g., Software Engineer"
+                                required
+                            />
+                            {errors.position && <p className="mt-1 text-sm text-red-400">{errors.position}</p>}
                         </div>
 
-                        <div className="flex gap-2 justify-end">
-                            {editingId && (
+                        <div>
+                            <label className="block text-sm font-medium text-gray-300 mb-2">Start Date</label>
+                            <input
+                                type="date"
+                                value={formData.start_date}
+                                onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                                className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                required
+                            />
+                            {errors.start_date && <p className="mt-1 text-sm text-red-400">{errors.start_date}</p>}
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-300 mb-2">End Date</label>
+                            <input
+                                type="date"
+                                value={formData.end_date}
+                                onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                                className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
+                                disabled={formData.is_current}
+                            />
+                            {errors.end_date && <p className="mt-1 text-sm text-red-400">{errors.end_date}</p>}
+                        </div>
+                    </div>
+
+                    <div className="flex items-center">
+                        <input
+                            type="checkbox"
+                            id="is_current_exp"
+                            checked={formData.is_current}
+                            onChange={(e) => setFormData({ ...formData, is_current: e.target.checked, end_date: '' })}
+                            className="w-4 h-4 rounded border-white/20 bg-white/5 text-blue-500 focus:ring-blue-500"
+                        />
+                        <label htmlFor="is_current_exp" className="ml-2 text-sm text-gray-400">I currently work here</label>
+                    </div>
+
+                    {/* Description with AI */}
+                    <div>
+                        <div className="flex items-center justify-between mb-2">
+                            <label className="block text-sm font-medium text-gray-300">Description</label>
+                            <div className="flex items-center gap-2">
+                                {rateLimit && <span className="text-xs text-gray-500">{rateLimit.remaining_requests}/{rateLimit.max_requests} AI</span>}
                                 <button
                                     type="button"
-                                    onClick={resetForm}
-                                    className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600"
+                                    onClick={handleAIEnhance}
+                                    disabled={enhancing || !formData.description.trim() || (rateLimit && rateLimit.remaining_requests <= 0)}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-gradient-to-r from-violet-600 to-indigo-600 rounded-lg hover:from-violet-500 hover:to-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                                 >
-                                    Cancel
+                                    {enhancing ? 'Enhancing...' : 'AI Enhance'}
                                 </button>
-                            )}
-                            <PrimaryButton disabled={saving}>
-                                {saving ? 'Saving...' : editingId ? 'Update' : 'Add'} Work Experience
-                            </PrimaryButton>
+                            </div>
                         </div>
-                    </form>
-                </div>
+                        <textarea
+                            value={formData.description}
+                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                            rows="4"
+                            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                            placeholder="Describe your responsibilities and achievements..."
+                        ></textarea>
+
+                        {showAiSuggestion && (
+                            <div className="mt-3 p-4 rounded-xl bg-violet-500/10 border border-violet-500/20">
+                                <h4 className="text-sm font-semibold text-violet-300 mb-2">AI Enhanced</h4>
+                                <p className="text-sm text-gray-300 whitespace-pre-wrap">{aiSuggestion}</p>
+                                <div className="flex gap-2 justify-end mt-3">
+                                    <button type="button" onClick={() => setShowAiSuggestion(false)} className="px-3 py-1.5 text-sm text-gray-400 hover:text-white">Dismiss</button>
+                                    <button type="button" onClick={applyAiSuggestion} className="px-4 py-1.5 text-sm font-semibold text-white bg-violet-600 hover:bg-violet-500 rounded-lg">Use This</button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="flex gap-2 justify-end">
+                        {editingId && (
+                            <button type="button" onClick={resetForm} className="px-4 py-2.5 bg-white/5 border border-white/10 text-gray-300 font-medium rounded-xl hover:bg-white/10 transition-colors">
+                                Cancel
+                            </button>
+                        )}
+                        <button
+                            type="submit"
+                            disabled={saving}
+                            className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-semibold rounded-xl transition-all disabled:opacity-50"
+                        >
+                            {saving ? 'Saving...' : `${editingId ? 'Update' : 'Add'} Experience`}
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     );

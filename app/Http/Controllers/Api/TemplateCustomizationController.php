@@ -3,41 +3,59 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreCustomizationRequest;
 use App\Models\Resume;
 use App\Models\TemplateCustomization;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Auth;
 
 class TemplateCustomizationController extends Controller
 {
+    /**
+     * Check if the authenticated user owns the resume
+     */
+    private function authorizeResume(Resume $resume): bool
+    {
+        return $resume->user_id === Auth::id();
+    }
+
     public function show(Resume $resume)
     {
+        // Authorization check
+        if (!$this->authorizeResume($resume)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized access to this resume.',
+            ], 403);
+        }
+
         $customization = $resume->customization()->first();
 
         if (!$customization) {
-            // Return default values
+            // Return default values from config
+            $defaults = config('cv-builder.defaults');
             $customization = new TemplateCustomization([
-                'primary_color' => '#3498DB',
-                'secondary_color' => '#2C3E50',
-                'accent_color' => '#1A2332',
-                'text_color' => '#2C3E50',
-                'background_color' => '#FFFFFF',
-                'font_family' => 'DejaVu Serif',
-                'font_size' => 10,
-                'line_height' => 1.5,
-                'page_padding' => 30,
-                'section_spacing' => 25,
-                'item_spacing' => 15,
-                'layout_type' => 'two_column',
-                'sidebar_width' => 35,
-                'show_photo' => true,
-                'show_summary' => true,
-                'show_skills' => true,
-                'show_experience' => true,
-                'show_education' => true,
-                'show_contact' => true,
-                'border_radius' => 4,
-                'border_width' => 2,
+                'primary_color' => $defaults['colors']['primary'],
+                'secondary_color' => $defaults['colors']['secondary'],
+                'accent_color' => $defaults['colors']['accent'],
+                'text_color' => $defaults['colors']['text'],
+                'background_color' => $defaults['colors']['background'],
+                'font_family' => $defaults['typography']['font_family'],
+                'font_size' => $defaults['typography']['font_size'],
+                'line_height' => $defaults['typography']['line_height'],
+                'page_padding' => $defaults['spacing']['page_padding'],
+                'section_spacing' => $defaults['spacing']['section_spacing'],
+                'item_spacing' => $defaults['spacing']['item_spacing'],
+                'layout_type' => $defaults['layout']['layout_type'],
+                'sidebar_width' => $defaults['layout']['sidebar_width'],
+                'show_photo' => $defaults['visibility']['show_photo'],
+                'show_summary' => $defaults['visibility']['show_summary'],
+                'show_skills' => $defaults['visibility']['show_skills'],
+                'show_experience' => $defaults['visibility']['show_experience'],
+                'show_education' => $defaults['visibility']['show_education'],
+                'show_contact' => $defaults['visibility']['show_contact'],
+                'border_radius' => $defaults['borders']['border_radius'],
+                'border_width' => $defaults['borders']['border_width'],
             ]);
         }
 
@@ -47,44 +65,13 @@ class TemplateCustomizationController extends Controller
         ]);
     }
 
-    public function store(Request $request, Resume $resume)
+    public function store(StoreCustomizationRequest $request, Resume $resume)
     {
-        $validator = Validator::make($request->all(), [
-            'primary_color' => 'nullable|string',
-            'secondary_color' => 'nullable|string',
-            'accent_color' => 'nullable|string',
-            'text_color' => 'nullable|string',
-            'background_color' => 'nullable|string',
-            'sidebar_bg_color' => 'nullable|string',
-            'font_family' => 'nullable|string',
-            'font_size' => 'nullable|integer|min:6|max:16',
-            'line_height' => 'nullable|numeric|min:1|max:3',
-            'page_padding' => 'nullable|integer|min:0|max:100',
-            'section_spacing' => 'nullable|integer|min:0|max:100',
-            'item_spacing' => 'nullable|integer|min:0|max:100',
-            'layout_type' => 'nullable|in:single_column,two_column',
-            'sidebar_width' => 'nullable|integer|min:20|max:50',
-            'show_photo' => 'nullable|boolean',
-            'show_summary' => 'nullable|boolean',
-            'show_skills' => 'nullable|boolean',
-            'show_experience' => 'nullable|boolean',
-            'show_education' => 'nullable|boolean',
-            'show_contact' => 'nullable|boolean',
-            'border_radius' => 'nullable|integer|min:0|max:20',
-            'border_width' => 'nullable|integer|min:0|max:10',
-            'preset_theme' => 'nullable|string',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors(),
-            ], 422);
-        }
+        // Authorization is handled by StoreCustomizationRequest
 
         $customization = $resume->customization()->updateOrCreate(
             ['resume_id' => $resume->id],
-            $validator->validated()
+            $request->validated()
         );
 
         return response()->json([
@@ -93,13 +80,21 @@ class TemplateCustomizationController extends Controller
         ]);
     }
 
-    public function update(Request $request, Resume $resume)
+    public function update(StoreCustomizationRequest $request, Resume $resume)
     {
         return $this->store($request, $resume);
     }
 
     public function destroy(Resume $resume)
     {
+        // Authorization check
+        if (!$this->authorizeResume($resume)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized access to this resume.',
+            ], 403);
+        }
+
         $customization = $resume->customization;
 
         if ($customization) {
@@ -114,10 +109,18 @@ class TemplateCustomizationController extends Controller
 
     public function applyPreset(Request $request, Resume $resume)
     {
+        // Authorization check
+        if (!$this->authorizeResume($resume)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized access to this resume.',
+            ], 403);
+        }
+
         $presets = $this->getPresets();
 
         $validator = Validator::make($request->all(), [
-            'preset' => 'required|string',
+            'preset' => 'required|string|max:50',
         ]);
 
         if ($validator->fails()) {
@@ -152,72 +155,7 @@ class TemplateCustomizationController extends Controller
 
     public function getPresets()
     {
-        return [
-            'modern_blue' => [
-                'primary_color' => '#3498DB',
-                'secondary_color' => '#2C3E50',
-                'accent_color' => '#1A2332',
-                'text_color' => '#2C3E50',
-                'background_color' => '#FFFFFF',
-                'sidebar_bg_color' => '#1A2332',
-            ],
-            'professional_gray' => [
-                'primary_color' => '#5D6D7E',
-                'secondary_color' => '#34495E',
-                'accent_color' => '#2C3E50',
-                'text_color' => '#2C3E50',
-                'background_color' => '#FFFFFF',
-                'sidebar_bg_color' => '#2C3E50',
-            ],
-            'creative_purple' => [
-                'primary_color' => '#9B59B6',
-                'secondary_color' => '#8E44AD',
-                'accent_color' => '#6C3483',
-                'text_color' => '#2C3E50',
-                'background_color' => '#FFFFFF',
-                'sidebar_bg_color' => '#6C3483',
-            ],
-            'warm_orange' => [
-                'primary_color' => '#E67E22',
-                'secondary_color' => '#D35400',
-                'accent_color' => '#A04000',
-                'text_color' => '#2C3E50',
-                'background_color' => '#FFFFFF',
-                'sidebar_bg_color' => '#A04000',
-            ],
-            'fresh_green' => [
-                'primary_color' => '#27AE60',
-                'secondary_color' => '#229954',
-                'accent_color' => '#1E8449',
-                'text_color' => '#2C3E50',
-                'background_color' => '#FFFFFF',
-                'sidebar_bg_color' => '#1E8449',
-            ],
-            'elegant_burgundy' => [
-                'primary_color' => '#922B21',
-                'secondary_color' => '#7B241C',
-                'accent_color' => '#641E16',
-                'text_color' => '#2C3E50',
-                'background_color' => '#FFFFFF',
-                'sidebar_bg_color' => '#641E16',
-            ],
-            'tech_cyan' => [
-                'primary_color' => '#17A2B8',
-                'secondary_color' => '#138496',
-                'accent_color' => '#0E6674',
-                'text_color' => '#2C3E50',
-                'background_color' => '#FFFFFF',
-                'sidebar_bg_color' => '#0E6674',
-            ],
-            'minimalist_black' => [
-                'primary_color' => '#000000',
-                'secondary_color' => '#333333',
-                'accent_color' => '#1A1A1A',
-                'text_color' => '#2C3E50',
-                'background_color' => '#FFFFFF',
-                'sidebar_bg_color' => '#1A1A1A',
-            ],
-        ];
+        return config('cv-builder.presets');
     }
 
     public function listPresets()
