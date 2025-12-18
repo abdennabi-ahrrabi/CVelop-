@@ -25,14 +25,17 @@ jobs:
       - name: Build frontend assets
         run: npm run build
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+      - name: Upload built assets to server
+        uses: appleboy/scp-action@v0.1.7
         with:
-          php-version: '8.2'
-          extensions: mbstring, xml, curl, zip, pdo, mysql, pdo_mysql
-
-      - name: Install Composer dependencies
-        run: composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.PORT }}
+          source: "public/build/"
+          target: "~/domains/indentio.me/public_html/public/"
+          strip_components: 2
+          overwrite: true
 
       - name: Deploy to Hostinger via SSH
         uses: appleboy/ssh-action@v1.0.3
@@ -51,15 +54,3 @@ jobs:
             php artisan view:cache
             php artisan storage:link 2>/dev/null || true
             echo "✅ Deployment completed!"
-
-      - name: Upload built assets to server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.PORT }}
-          source: "public/build/"
-          target: "~/domains/indentio.me/public_html/public/"
-          strip_components: 2
-          overwrite: true
