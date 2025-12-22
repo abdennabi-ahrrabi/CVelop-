@@ -25,31 +25,18 @@ jobs:
       - name: Build frontend assets
         run: npm run build
 
-      - name: Upload built assets to server
-        uses: appleboy/scp-action@v0.1.7
+      - name: Deploy all files via rsync
+        uses: burnett01/rsync-deployments@7.0.1
         with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.PORT }}
-          source: "public/build/"
-          target: "~/domains/indentio.me/public_html/public/"
-          strip_components: 2
-          overwrite: true
+          switches: -avzr --delete --exclude='.git' --exclude='node_modules' --exclude='vendor' --exclude='.env' --exclude='storage/logs/*' --exclude='storage/framework/cache/*' --exclude='storage/framework/sessions/*' --exclude='storage/framework/views/*'
+          path: ./
+          remote_path: ~/domains/indentio.me/public_html/
+          remote_host: ${{ secrets.HOST }}
+          remote_user: ${{ secrets.USERNAME }}
+          remote_key: ${{ secrets.SSH_KEY }}
+          remote_port: ${{ secrets.PORT }}
 
-      - name: Upload static files (logo, favicon)
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.PORT }}
-          source: "public/images/,public/favicon.ico"
-          target: "~/domains/indentio.me/public_html/public/"
-          strip_components: 1
-          overwrite: true
-
-      - name: Deploy to Hostinger via SSH
+      - name: Run post-deploy commands
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.HOST }}
@@ -58,7 +45,6 @@ jobs:
           port: ${{ secrets.PORT }}
           script: |
             cd ~/domains/indentio.me/public_html
-            git pull origin main
             composer install --no-dev --optimize-autoloader --no-interaction
             php artisan migrate --force
             php artisan config:cache
