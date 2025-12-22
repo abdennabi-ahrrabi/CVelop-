@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
+import ApplicationLogo from '@/Components/ApplicationLogo';
 
 export default function Welcome({ auth }) {
     const [scrollY, setScrollY] = useState(0);
@@ -28,16 +29,7 @@ export default function Welcome({ auth }) {
                 <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrollY > 50 ? 'bg-black/50 backdrop-blur-xl border-b border-white/10' : ''}`}>
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="flex justify-between items-center h-20">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/25">
-                                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                    </svg>
-                                </div>
-                                <span className="text-xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
-                                    Indentio
-                                </span>
-                            </div>
+                            <ApplicationLogo className="[&_span]:text-white" />
 
                             <div className="hidden md:flex items-center gap-8">
                                 <a href="#features" className="text-gray-400 hover:text-white transition-colors">Features</a>
@@ -419,14 +411,7 @@ export default function Welcome({ auth }) {
                     <div className="max-w-7xl mx-auto">
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
                             <div className="md:col-span-2">
-                                <div className="flex items-center gap-3 mb-4">
-                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center">
-                                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                        </svg>
-                                    </div>
-                                    <span className="text-xl font-bold text-white">Indentio</span>
-                                </div>
+                                <ApplicationLogo className="mb-4 [&_span]:text-white" />
                                 <p className="text-gray-400 max-w-md">
                                     Your complete professional identity platform. Resumes, digital business cards, public profiles, and analytics - all in one place.
                                 </p>

@@ -1,4 +1,5 @@
 import { Link } from '@inertiajs/react';
+import ApplicationLogo from '@/Components/ApplicationLogo';
 
 export default function GuestLayout({ children }) {
     return (
@@ -22,14 +23,7 @@ export default function GuestLayout({ children }) {
                 {/* Content */}
                 <div className="relative z-10 flex flex-col justify-center px-12 text-white">
                     <Link href="/" className="mb-12">
-                        <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/25">
-                                <svg className="h-6 w-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                </svg>
-                            </div>
-                            <span className="text-2xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">Indentio</span>
-                        </div>
+                        <ApplicationLogo className="[&_img]:h-12 [&_span]:text-2xl [&_span]:text-white" />
                     </Link>
 
                     <h1 className="text-5xl font-bold mb-6 leading-tight">
@@ -82,14 +76,7 @@ export default function GuestLayout({ children }) {
                 {/* Mobile logo */}
                 <div className="lg:hidden mb-8">
                     <Link href="/">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center">
-                                <svg className="h-5 w-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                </svg>
-                            </div>
-                            <span className="text-xl font-bold text-white">Indentio</span>
-                        </div>
+                        <ApplicationLogo className="[&_span]:text-white" />
                     </Link>
                 </div>
 
