@@ -37,6 +37,18 @@ jobs:
           strip_components: 2
           overwrite: true
 
+      - name: Upload static files (logo, favicon)
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.PORT }}
+          source: "public/images/,public/favicon.ico"
+          target: "~/domains/indentio.me/public_html/public/"
+          strip_components: 1
+          overwrite: true
+
       - name: Deploy to Hostinger via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
