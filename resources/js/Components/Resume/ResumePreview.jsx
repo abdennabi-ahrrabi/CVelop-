@@ -489,18 +489,6 @@ function ModernPreview({ resume, customization }) {
                 )}
             </div>
 
-            {/* Footer */}
-            <div style={{
-                marginTop: '25px',
-                padding: '12px 35px',
-                backgroundColor: '#F9FAFB',
-                borderTop: '1px solid #E5E7EB',
-                textAlign: 'center',
-                fontSize: '8pt',
-                color: '#9CA3AF'
-            }}>
-                Generated with CV Builder Pro
-            </div>
         </div>
     );
 }

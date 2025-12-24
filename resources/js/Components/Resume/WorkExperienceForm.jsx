@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { workExperienceApi, aiApi } from '@/utils/api';
 
-export default function WorkExperienceForm({ resumeId, experiences = [], onUpdate }) {
+export default function WorkExperienceForm({ resumeId, experiences = [], onUpdate, onNext, showNextButton = false }) {
     const [items, setItems] = useState(experiences);
     const [editingId, setEditingId] = useState(null);
     const [formData, setFormData] = useState({
@@ -280,6 +280,28 @@ export default function WorkExperienceForm({ resumeId, experiences = [], onUpdat
                         </button>
                     </div>
                 </form>
+
+                {/* Continue to Next Section */}
+                {showNextButton && onNext && (
+                    <div className="mt-6 pt-6 border-t border-white/10 flex items-center justify-between">
+                        <p className="text-sm text-gray-500">
+                            {items.length === 0
+                                ? 'Add at least one work experience or skip to continue'
+                                : `${items.length} experience${items.length > 1 ? 's' : ''} added`
+                            }
+                        </p>
+                        <button
+                            type="button"
+                            onClick={onNext}
+                            className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-semibold rounded-xl transition-all"
+                        >
+                            Continue to Education
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                            </svg>
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );

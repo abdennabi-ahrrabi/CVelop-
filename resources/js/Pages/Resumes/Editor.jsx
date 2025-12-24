@@ -17,10 +17,20 @@ export default function Editor({ resumeId = null }) {
     const [templates, setTemplates] = useState([]);
     const [showTemplateSelector, setShowTemplateSelector] = useState(false);
     const [showCustomizer, setShowCustomizer] = useState(false);
+    const [selectedTemplateSlug, setSelectedTemplateSlug] = useState(null);
 
     const { data, setData, errors, setError } = useForm({
         title: '',
     });
+
+    // Get template slug from URL query parameter
+    useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const templateSlug = urlParams.get('template');
+        if (templateSlug) {
+            setSelectedTemplateSlug(templateSlug);
+        }
+    }, []);
 
     useEffect(() => {
         if (currentResumeId) {
@@ -44,6 +54,8 @@ export default function Editor({ resumeId = null }) {
         try {
             setLoading(true);
             const response = await resumeApi.get(currentResumeId);
+            console.log('Editor fetchResume - Full response:', response.data.data);
+            console.log('Editor fetchResume - Template:', response.data.data?.template);
             setResume(response.data.data);
             setData('title', response.data.data.title);
         } catch (err) {
@@ -56,11 +68,31 @@ export default function Editor({ resumeId = null }) {
     const handleCreateResume = async (e) => {
         e.preventDefault();
         try {
-            const response = await resumeApi.create({ title: data.title });
+            // Find template ID from slug if a template was selected
+            let templateId = null;
+            if (selectedTemplateSlug && templates.length > 0) {
+                const selectedTemplate = templates.find(t => t.slug === selectedTemplateSlug);
+                if (selectedTemplate) {
+                    templateId = selectedTemplate.id;
+                }
+            }
+
+            const createData = { title: data.title };
+            if (templateId) {
+                createData.template_id = templateId;
+            }
+
+            const response = await resumeApi.create(createData);
             setResume(response.data.data);
             setCurrentResumeId(response.data.data.id);
             setIsNew(false);
             window.history.pushState({}, '', `/resumes/${response.data.data.id}/edit`);
+
+            // Fetch resume again to get the full template data
+            if (templateId) {
+                const fullResume = await resumeApi.get(response.data.data.id);
+                setResume(fullResume.data.data);
+            }
         } catch (error) {
             if (error.response?.data?.errors) {
                 setError(error.response.data.errors);
@@ -71,7 +103,14 @@ export default function Editor({ resumeId = null }) {
     const handleUpdateResume = async (updates) => {
         try {
             const response = await resumeApi.update(resume.id, updates);
-            setResume(response.data.data);
+            const updatedResume = response.data.data;
+            console.log('Editor handleUpdateResume - Response template:', updatedResume?.template);
+
+            // Preserve the existing template if the API response doesn't include it
+            setResume(prev => ({
+                ...updatedResume,
+                template: updatedResume.template || prev?.template
+            }));
         } catch (error) {
             console.error(error);
             throw error;
@@ -91,6 +130,7 @@ export default function Editor({ resumeId = null }) {
         {
             id: 'personal',
             label: 'Personal Info',
+            shortLabel: 'Details',
             icon: (
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -100,6 +140,7 @@ export default function Editor({ resumeId = null }) {
         {
             id: 'experience',
             label: 'Experience',
+            shortLabel: 'Work',
             icon: (
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -109,6 +150,7 @@ export default function Editor({ resumeId = null }) {
         {
             id: 'education',
             label: 'Education',
+            shortLabel: 'Education',
             icon: (
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
@@ -118,6 +160,7 @@ export default function Editor({ resumeId = null }) {
         {
             id: 'skills',
             label: 'Skills',
+            shortLabel: 'Skills',
             icon: (
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -125,6 +168,24 @@ export default function Editor({ resumeId = null }) {
             ),
         },
     ];
+
+    const currentTabIndex = tabs.findIndex(tab => tab.id === activeTab);
+    const isFirstTab = currentTabIndex === 0;
+    const isLastTab = currentTabIndex === tabs.length - 1;
+
+    const goToNextTab = () => {
+        if (!isLastTab) {
+            setActiveTab(tabs[currentTabIndex + 1].id);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    };
+
+    const goToPreviousTab = () => {
+        if (!isFirstTab) {
+            setActiveTab(tabs[currentTabIndex - 1].id);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    };
 
     const completionPercentage = Math.round(
         (resume?.personal_info ? 25 : 0) +
@@ -172,6 +233,23 @@ export default function Editor({ resumeId = null }) {
                                 </div>
 
                                 <form onSubmit={handleCreateResume} className="space-y-6">
+                                    {/* Show selected template */}
+                                    {selectedTemplateSlug && templates.length > 0 && (
+                                        <div className="flex items-center gap-3 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
+                                            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center">
+                                                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-semibold text-emerald-400">Template Selected</p>
+                                                <p className="text-xs text-gray-400">
+                                                    {templates.find(t => t.slug === selectedTemplateSlug)?.name || selectedTemplateSlug}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
+
                                     <div>
                                         <label className="block text-sm font-medium text-gray-300 mb-2">Resume Title</label>
                                         <input
@@ -229,12 +307,22 @@ export default function Editor({ resumeId = null }) {
                             </div>
                             <div>
                                 <h1 className="text-2xl font-bold text-white">{resume?.title}</h1>
-                                <p className="text-sm text-gray-400 flex items-center gap-2">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    Updated {new Date(resume?.updated_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
-                                </p>
+                                <div className="flex items-center gap-3 mt-1">
+                                    <p className="text-sm text-gray-400 flex items-center gap-2">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        Updated {new Date(resume?.updated_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                                    </p>
+                                    {resume?.template && (
+                                        <span className="flex items-center gap-1.5 px-2.5 py-1 bg-violet-500/20 text-violet-300 text-xs font-medium rounded-lg">
+                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+                                            </svg>
+                                            {resume.template.name}
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                         </div>
                         <div className="flex items-center gap-3">
@@ -300,12 +388,18 @@ export default function Editor({ resumeId = null }) {
                             <div>
                                 <h3 className="text-sm font-semibold text-white mb-1">Template</h3>
                                 <p className="text-sm text-gray-400">
-                                    Current: <span className="text-violet-400 font-medium">{resume?.template?.name || 'Modern Professional'}</span>
+                                    Current: <span className={`font-medium ${resume?.template ? 'text-violet-400' : 'text-amber-400'}`}>
+                                        {resume?.template?.name || 'None selected (using Modern default)'}
+                                    </span>
                                 </p>
                             </div>
                             <div className="flex flex-wrap gap-2">
                                 <button
-                                    onClick={() => setShowCustomizer(true)}
+                                    onClick={() => {
+                                        console.log('Customize clicked - resume:', resume);
+                                        console.log('Customize clicked - resume.template:', resume?.template);
+                                        setShowCustomizer(true);
+                                    }}
                                     className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white text-sm font-semibold rounded-xl transition-all"
                                 >
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -349,7 +443,12 @@ export default function Editor({ resumeId = null }) {
                     {/* Tab Content */}
                     <div className="space-y-6">
                         {activeTab === 'personal' && resume && (
-                            <PersonalInfoForm resume={resume} onUpdate={handleUpdateResume} />
+                            <PersonalInfoForm
+                                resume={resume}
+                                onUpdate={handleUpdateResume}
+                                onNext={goToNextTab}
+                                showNextButton={!isLastTab}
+                            />
                         )}
 
                         {activeTab === 'experience' && resume?.id && (
@@ -357,6 +456,8 @@ export default function Editor({ resumeId = null }) {
                                 resumeId={resume.id}
                                 experiences={resume?.work_experiences || []}
                                 onUpdate={fetchResume}
+                                onNext={goToNextTab}
+                                showNextButton={true}
                             />
                         )}
 
@@ -365,6 +466,8 @@ export default function Editor({ resumeId = null }) {
                                 resumeId={resume.id}
                                 educations={resume?.educations || []}
                                 onUpdate={fetchResume}
+                                onNext={goToNextTab}
+                                showNextButton={true}
                             />
                         )}
 
@@ -373,8 +476,110 @@ export default function Editor({ resumeId = null }) {
                                 resumeId={resume.id}
                                 skills={resume?.skills || []}
                                 onUpdate={fetchResume}
+                                isLastStep={true}
+                                onFinish={() => window.open(`/resumes/${resume?.id}/pdf/preview`, '_blank')}
                             />
                         )}
+                    </div>
+
+                    {/* Navigation Buttons */}
+                    <div className="mt-8 rounded-2xl bg-white/5 border border-white/10 p-6">
+                        <div className="flex items-center justify-between">
+                            {/* Previous Button */}
+                            <div>
+                                {!isFirstTab && (
+                                    <button
+                                        onClick={goToPreviousTab}
+                                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl transition-all border border-white/10"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                        </svg>
+                                        Previous: {tabs[currentTabIndex - 1]?.label}
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Step Indicator */}
+                            <div className="hidden sm:flex items-center gap-2">
+                                {tabs.map((tab, idx) => (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => setActiveTab(tab.id)}
+                                        className={`w-3 h-3 rounded-full transition-all ${
+                                            idx === currentTabIndex
+                                                ? 'bg-violet-500 w-8'
+                                                : idx < currentTabIndex
+                                                    ? 'bg-emerald-500'
+                                                    : 'bg-white/20'
+                                        }`}
+                                        title={tab.label}
+                                    />
+                                ))}
+                            </div>
+
+                            {/* Next / Finish Button */}
+                            <div>
+                                {isLastTab ? (
+                                    <div className="flex gap-3">
+                                        <button
+                                            onClick={() => setShowCustomizer(true)}
+                                            className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl transition-all border border-white/10"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                                            </svg>
+                                            Customize
+                                        </button>
+                                        <a
+                                            href={`/resumes/${resume?.id}/pdf/preview`}
+                                            target="_blank"
+                                            className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold rounded-xl transition-all shadow-lg"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                            </svg>
+                                            Preview
+                                        </a>
+                                        <a
+                                            href={`/resumes/${resume?.id}/pdf/download`}
+                                            className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-semibold rounded-xl transition-all shadow-lg"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                            </svg>
+                                            Download PDF
+                                        </a>
+                                    </div>
+                                ) : (
+                                    <button
+                                        onClick={goToNextTab}
+                                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-semibold rounded-xl transition-all shadow-lg shadow-violet-500/25"
+                                    >
+                                        Next: {tabs[currentTabIndex + 1]?.label}
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                        </svg>
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Progress hint */}
+                        <div className="mt-4 pt-4 border-t border-white/10 text-center">
+                            <p className="text-sm text-gray-500">
+                                {isLastTab ? (
+                                    completionPercentage === 100 ? (
+                                        <span className="text-emerald-400">Your resume is complete! Download or preview it above.</span>
+                                    ) : (
+                                        <span>Fill in all sections to complete your resume ({completionPercentage}% done)</span>
+                                    )
+                                ) : (
+                                    <span>Step {currentTabIndex + 1} of {tabs.length} - {tabs[currentTabIndex]?.label}</span>
+                                )}
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>

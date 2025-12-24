@@ -37,6 +37,9 @@ class ResumeController extends Controller
     {
         $resume = $request->user()->resumes()->create($request->validated());
 
+        // Load the template relationship if a template was selected
+        $resume->load('template');
+
         return response()->json([
             'success' => true,
             'message' => 'Resume created successfully',
@@ -70,6 +73,9 @@ class ResumeController extends Controller
     public function update(UpdateResumeRequest $request, Resume $resume): JsonResponse
     {
         $resume->update($request->validated());
+
+        // Reload the template relationship after update
+        $resume->load('template');
 
         return response()->json([
             'success' => true,

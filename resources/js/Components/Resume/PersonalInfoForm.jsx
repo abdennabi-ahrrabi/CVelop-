@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { aiApi } from '@/utils/api';
 
-export default function PersonalInfoForm({ resume, onUpdate }) {
+export default function PersonalInfoForm({ resume, onUpdate, onNext, showNextButton = true }) {
     const [formData, setFormData] = useState({
         full_name: resume?.personal_info?.full_name || '',
         email: resume?.personal_info?.email || '',
@@ -281,36 +281,66 @@ export default function PersonalInfoForm({ resume, onUpdate }) {
 
                     {/* Footer */}
                     <div className="flex items-center justify-between pt-4 border-t border-white/10">
-                        {saved && (
-                            <div className="flex items-center gap-2 text-emerald-400">
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                </svg>
-                                <span className="text-sm font-medium">Saved!</span>
-                            </div>
-                        )}
-                        <button
-                            type="submit"
-                            disabled={saving}
-                            className="ml-auto inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-semibold rounded-xl transition-all disabled:opacity-50"
-                        >
-                            {saving ? (
-                                <>
-                                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                    </svg>
-                                    Saving...
-                                </>
-                            ) : (
-                                <>
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="flex items-center gap-3">
+                            {saved && (
+                                <div className="flex items-center gap-2 text-emerald-400">
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                     </svg>
-                                    Save Changes
-                                </>
+                                    <span className="text-sm font-medium">Saved!</span>
+                                </div>
                             )}
-                        </button>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <button
+                                type="submit"
+                                disabled={saving}
+                                className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl transition-all border border-white/10 disabled:opacity-50"
+                            >
+                                {saving ? (
+                                    <>
+                                        <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        Saving...
+                                    </>
+                                ) : (
+                                    <>
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        Save
+                                    </>
+                                )}
+                            </button>
+                            {showNextButton && onNext && (
+                                <button
+                                    type="button"
+                                    disabled={saving}
+                                    onClick={async () => {
+                                        setSaving(true);
+                                        try {
+                                            await onUpdate({ personal_info: formData });
+                                            setSaved(true);
+                                            onNext();
+                                        } catch (error) {
+                                            if (error.response?.data?.errors) {
+                                                setErrors(error.response.data.errors);
+                                            }
+                                        } finally {
+                                            setSaving(false);
+                                        }
+                                    }}
+                                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-semibold rounded-xl transition-all disabled:opacity-50"
+                                >
+                                    Save & Continue
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                    </svg>
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>

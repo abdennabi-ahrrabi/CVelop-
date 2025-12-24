@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { skillApi } from '@/utils/api';
 
-export default function SkillsForm({ resumeId, skills = [], onUpdate }) {
+export default function SkillsForm({ resumeId, skills = [], onUpdate, isLastStep = false, onFinish }) {
     const [items, setItems] = useState(skills);
     const [editingId, setEditingId] = useState(null);
     const [formData, setFormData] = useState({
@@ -192,6 +192,54 @@ export default function SkillsForm({ resumeId, skills = [], onUpdate }) {
                         </button>
                     </div>
                 </form>
+
+                {/* Final Step - Finish Section */}
+                {isLastStep && (
+                    <div className="mt-6 pt-6 border-t border-white/10">
+                        <div className="rounded-xl bg-gradient-to-r from-emerald-600/10 to-green-600/10 border border-emerald-500/20 p-6">
+                            <div className="flex items-start gap-4">
+                                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center flex-shrink-0">
+                                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <div className="flex-1">
+                                    <h4 className="text-lg font-bold text-white mb-1">You're Almost Done!</h4>
+                                    <p className="text-sm text-gray-400 mb-4">
+                                        {items.length === 0
+                                            ? 'Add some skills to showcase your expertise, then preview or download your resume.'
+                                            : `Great! You've added ${items.length} skill${items.length > 1 ? 's' : ''}. Preview your resume to see how it looks.`
+                                        }
+                                    </p>
+                                    <div className="flex flex-wrap gap-3">
+                                        {onFinish && (
+                                            <button
+                                                type="button"
+                                                onClick={onFinish}
+                                                className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold rounded-xl transition-all shadow-lg"
+                                            >
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                </svg>
+                                                Preview Resume
+                                            </button>
+                                        )}
+                                        <a
+                                            href={`/resumes/${resumeId}/pdf/download`}
+                                            className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-semibold rounded-xl transition-all shadow-lg"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                            </svg>
+                                            Download PDF
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

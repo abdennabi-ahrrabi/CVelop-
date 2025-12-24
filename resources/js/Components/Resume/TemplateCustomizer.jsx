@@ -1,29 +1,80 @@
 import { useState, useEffect } from 'react';
-import { customizationApi } from '@/utils/api';
+import { customizationApi, resumeApi, templateApi } from '@/utils/api';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import InputLabel from '@/Components/InputLabel';
 import ResumePreview from './ResumePreview';
 
-export default function TemplateCustomizer({ resumeId, resume, onClose, onUpdate }) {
+export default function TemplateCustomizer({ resumeId, resume: initialResume, onClose, onUpdate }) {
     const [customization, setCustomization] = useState(null);
     const [presets, setPresets] = useState([]);
+    const [templates, setTemplates] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [activeTab, setActiveTab] = useState('colors');
+    const [activeTab, setActiveTab] = useState('template');
     const [hasChanges, setHasChanges] = useState(false);
     const [zoom, setZoom] = useState(50);
     const [showPreview, setShowPreview] = useState(true);
+    const [resume, setResume] = useState(initialResume);
+    const [currentTemplate, setCurrentTemplate] = useState(initialResume?.template || null);
 
-    // Get the correct template slug from resume
-    const templateSlug = resume?.template?.slug || 'executive';
+    // Debug logging
+    console.log('TemplateCustomizer INIT - initialResume:', initialResume);
+    console.log('TemplateCustomizer INIT - initialResume.template:', initialResume?.template);
 
-    console.log('Template Slug:', templateSlug, 'Resume:', resume);
+    // Sync with initialResume when it changes
+    useEffect(() => {
+        if (initialResume) {
+            setResume(initialResume);
+            if (initialResume.template) {
+                setCurrentTemplate(initialResume.template);
+            }
+        }
+    }, [initialResume]);
+
+    // Get template slug - prioritize currentTemplate state (default to 'modern' to match PDF export)
+    const templateSlug = currentTemplate?.slug || resume?.template?.slug || 'modern';
+
+    console.log('TemplateCustomizer - Using template slug:', templateSlug);
+    console.log('TemplateCustomizer - currentTemplate:', currentTemplate);
 
     useEffect(() => {
         fetchCustomization();
         fetchPresets();
+        fetchTemplates();
     }, [resumeId]);
+
+    const fetchTemplates = async () => {
+        try {
+            const response = await templateApi.getAll();
+            setTemplates(response.data.data);
+        } catch (error) {
+            console.error('Error fetching templates:', error);
+        }
+    };
+
+    const handleTemplateChange = async (templateId) => {
+        try {
+            setSaving(true);
+            // Find the template from our templates list
+            const selectedTemplate = templates.find(t => t.id === templateId);
+
+            // Update API
+            await resumeApi.update(resumeId, { template_id: templateId });
+
+            // Update local state immediately for instant preview
+            if (selectedTemplate) {
+                setCurrentTemplate(selectedTemplate);
+                setResume(prev => ({ ...prev, template: selectedTemplate, template_id: templateId }));
+            }
+
+            if (onUpdate) onUpdate();
+        } catch (error) {
+            console.error('Error changing template:', error);
+        } finally {
+            setSaving(false);
+        }
+    };
 
     const fetchCustomization = async () => {
         try {
@@ -102,6 +153,7 @@ export default function TemplateCustomizer({ resumeId, resume, onClose, onUpdate
     ];
 
     const tabs = [
+        { id: 'template', label: 'Template', icon: '📄' },
         { id: 'colors', label: 'Colors', icon: '🎨' },
         { id: 'typography', label: 'Typography', icon: '📝' },
         { id: 'spacing', label: 'Spacing', icon: '📏' },
@@ -177,6 +229,92 @@ export default function TemplateCustomizer({ resumeId, resume, onClose, onUpdate
 
                 {/* Main Content */}
                 <div className="flex-1 overflow-y-auto p-6" style={{ maxWidth: showPreview ? '40%' : '100%' }}>
+                    {/* Template Tab */}
+                    {activeTab === 'template' && (
+                        <div className="space-y-6">
+                            <div>
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">Choose Template</h3>
+                                <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                                    Select a template design for your resume. The preview will update automatically.
+                                </p>
+
+                                {/* Current Template Info */}
+                                <div className={`mb-6 p-4 rounded-xl border ${currentTemplate ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800' : 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'}`}>
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${currentTemplate ? 'bg-indigo-600' : 'bg-amber-600'}`}>
+                                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                {currentTemplate ? (
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                ) : (
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                                )}
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <p className={`text-sm font-semibold ${currentTemplate ? 'text-indigo-700 dark:text-indigo-300' : 'text-amber-700 dark:text-amber-300'}`}>
+                                                Current Template
+                                            </p>
+                                            <p className={`text-lg font-bold capitalize ${currentTemplate ? 'text-indigo-900 dark:text-indigo-100' : 'text-amber-900 dark:text-amber-100'}`}>
+                                                {currentTemplate?.name || 'No template selected - using Modern as default'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Template Grid */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {templates.map((template) => {
+                                        const isActive = currentTemplate?.id === template.id;
+                                        return (
+                                            <button
+                                                key={template.id}
+                                                onClick={() => handleTemplateChange(template.id)}
+                                                disabled={saving || isActive}
+                                                className={`text-left p-4 rounded-xl border-2 transition-all hover:shadow-lg disabled:opacity-70 ${
+                                                    isActive
+                                                        ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20'
+                                                        : 'border-gray-200 dark:border-gray-700 hover:border-indigo-400'
+                                                }`}
+                                            >
+                                                <div className="flex items-start justify-between mb-2">
+                                                    <h4 className="font-bold text-gray-900 dark:text-gray-100">{template.name}</h4>
+                                                    {isActive && (
+                                                        <span className="px-2 py-1 bg-indigo-600 text-white text-xs rounded-full">Active</span>
+                                                    )}
+                                                </div>
+                                                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{template.description}</p>
+
+                                                {/* Template Preview Colors */}
+                                                {template.colors && (
+                                                    <div className="flex gap-2">
+                                                        <div
+                                                            className="w-8 h-8 rounded-lg border-2 border-white shadow-md"
+                                                            style={{ backgroundColor: template.colors.primary || '#4F46E5' }}
+                                                        ></div>
+                                                        <div
+                                                            className="w-8 h-8 rounded-lg border-2 border-white shadow-md"
+                                                            style={{ backgroundColor: template.colors.secondary || '#7C3AED' }}
+                                                        ></div>
+                                                        <div
+                                                            className="w-8 h-8 rounded-lg border-2 border-white shadow-md"
+                                                            style={{ backgroundColor: template.colors.accent || '#EC4899' }}
+                                                        ></div>
+                                                    </div>
+                                                )}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+
+                                {templates.length === 0 && (
+                                    <div className="text-center py-8 text-gray-500">
+                                        Loading templates...
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Colors Tab */}
                     {activeTab === 'colors' && (
                         <div className="space-y-6">

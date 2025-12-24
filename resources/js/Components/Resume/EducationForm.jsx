@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { educationApi, aiApi } from '@/utils/api';
 
-export default function EducationForm({ resumeId, educations = [], onUpdate }) {
+export default function EducationForm({ resumeId, educations = [], onUpdate, onNext, showNextButton = false }) {
     const [items, setItems] = useState(educations);
     const [editingId, setEditingId] = useState(null);
     const [formData, setFormData] = useState({
@@ -291,6 +291,28 @@ export default function EducationForm({ resumeId, educations = [], onUpdate }) {
                         </button>
                     </div>
                 </form>
+
+                {/* Continue to Next Section */}
+                {showNextButton && onNext && (
+                    <div className="mt-6 pt-6 border-t border-white/10 flex items-center justify-between">
+                        <p className="text-sm text-gray-500">
+                            {items.length === 0
+                                ? 'Add at least one education entry or skip to continue'
+                                : `${items.length} education entr${items.length > 1 ? 'ies' : 'y'} added`
+                            }
+                        </p>
+                        <button
+                            type="button"
+                            onClick={onNext}
+                            className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-semibold rounded-xl transition-all"
+                        >
+                            Continue to Skills
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                            </svg>
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );

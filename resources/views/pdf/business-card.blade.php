@@ -824,10 +824,6 @@
             <div class="qr-label">Scan to connect</div>
         </div>
 
-        <!-- Footer -->
-        <div class="footer">
-            Generated with CV Builder
-        </div>
     </div>
 </body>
 </html>

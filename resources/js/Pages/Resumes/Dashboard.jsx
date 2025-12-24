@@ -2,6 +2,83 @@ import { useState, useEffect } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link } from '@inertiajs/react';
 import { resumeApi, templateApi } from '@/utils/api';
+import ResumePreview from '@/Components/Resume/ResumePreview';
+
+// Sample resume data for template preview
+const sampleResumeData = {
+    personal_info: {
+        full_name: 'Sarah Johnson',
+        email: 'sarah.johnson@email.com',
+        phone: '+1 (555) 123-4567',
+        address: 'San Francisco, CA',
+        summary: 'Experienced software engineer with 8+ years of expertise in building scalable web applications. Passionate about clean code, user experience, and mentoring junior developers. Proven track record of delivering high-impact projects on time.',
+    },
+    work_experiences: [
+        {
+            position: 'Senior Software Engineer',
+            company: 'Tech Solutions Inc.',
+            start_date: '2020',
+            end_date: null,
+            is_current: true,
+            description: 'Lead development of microservices architecture serving 2M+ users. Mentored team of 5 junior developers and improved deployment frequency by 40%.',
+        },
+        {
+            position: 'Software Engineer',
+            company: 'Digital Innovations Co.',
+            start_date: '2017',
+            end_date: '2020',
+            is_current: false,
+            description: 'Built and maintained RESTful APIs and React-based frontends. Implemented CI/CD pipelines reducing release time by 60%.',
+        },
+    ],
+    educations: [
+        {
+            degree: 'Master of Science',
+            field: 'Computer Science',
+            institution: 'Stanford University',
+            start_date: '2015',
+            end_date: '2017',
+            is_current: false,
+            description: 'Specialized in distributed systems and machine learning.',
+        },
+        {
+            degree: 'Bachelor of Science',
+            field: 'Computer Engineering',
+            institution: 'UC Berkeley',
+            start_date: '2011',
+            end_date: '2015',
+            is_current: false,
+            description: '',
+        },
+    ],
+    skills: [
+        { name: 'JavaScript/TypeScript', proficiency_level: 'expert' },
+        { name: 'React & Node.js', proficiency_level: 'expert' },
+        { name: 'Python', proficiency_level: 'advanced' },
+        { name: 'AWS & Cloud Services', proficiency_level: 'advanced' },
+        { name: 'System Design', proficiency_level: 'advanced' },
+        { name: 'Team Leadership', proficiency_level: 'intermediate' },
+    ],
+};
+
+// Default customization for template preview
+const defaultCustomization = {
+    font_family: 'DejaVu Serif',
+    font_size: 10,
+    text_color: '#2C3E50',
+    line_height: 1.5,
+    page_padding: 30,
+    section_spacing: 25,
+    item_spacing: 15,
+    border_width: 2,
+    border_radius: 4,
+    show_photo: false,
+    show_contact: true,
+    show_summary: true,
+    show_skills: true,
+    show_experience: true,
+    show_education: true,
+};
 
 // Template preview component with visual styling
 const TemplatePreview = ({ template }) => {
@@ -86,10 +163,24 @@ export default function Dashboard() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [activeTab, setActiveTab] = useState('resumes');
+    const [previewResume, setPreviewResume] = useState(null);
+    const [previewTemplate, setPreviewTemplate] = useState(null);
 
     useEffect(() => {
         fetchData();
     }, []);
+
+    // Handle Escape key to close preview modals
+    useEffect(() => {
+        const handleEscape = (e) => {
+            if (e.key === 'Escape') {
+                if (previewResume) setPreviewResume(null);
+                if (previewTemplate) setPreviewTemplate(null);
+            }
+        };
+        document.addEventListener('keydown', handleEscape);
+        return () => document.removeEventListener('keydown', handleEscape);
+    }, [previewResume, previewTemplate]);
 
     const fetchData = async () => {
         try {
@@ -215,14 +306,13 @@ export default function Dashboard() {
 
                             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                                 {templates.map((template) => (
-                                    <Link
+                                    <div
                                         key={template.id}
-                                        href={`/resumes/create?template=${template.slug}`}
                                         className="group relative"
                                     >
                                         <div className="rounded-2xl bg-white/5 border border-white/10 hover:border-violet-500/50 hover:bg-white/10 transition-all p-4">
-                                            {/* Preview */}
-                                            <div className="mb-4">
+                                            {/* Preview Thumbnail */}
+                                            <div className="mb-4 cursor-pointer" onClick={() => setPreviewTemplate(template)}>
                                                 <TemplatePreview template={template} />
                                             </div>
 
@@ -238,25 +328,35 @@ export default function Dashboard() {
                                                         </span>
                                                     )}
                                                 </div>
-                                                <p className="text-xs text-gray-500 line-clamp-2">
+                                                <p className="text-xs text-gray-500 line-clamp-2 mb-4">
                                                     {template.description}
                                                 </p>
                                             </div>
 
-                                            {/* Hover Overlay */}
-                                            <div className="absolute inset-0 rounded-2xl bg-gradient-to-t from-violet-600/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
-                                        </div>
-
-                                        {/* Use Template Button (visible on hover) */}
-                                        <div className="absolute bottom-4 left-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <div className="flex items-center justify-center gap-2 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-sm font-semibold rounded-lg">
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                                                </svg>
-                                                Use Template
+                                            {/* Action Buttons */}
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => setPreviewTemplate(template)}
+                                                    className="flex-1 inline-flex items-center justify-center gap-2 py-2 bg-white/10 hover:bg-white/20 text-white text-sm font-semibold rounded-lg transition-all border border-white/10"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                    </svg>
+                                                    Preview
+                                                </button>
+                                                <Link
+                                                    href={`/resumes/create?template=${template.slug}`}
+                                                    className="flex-1 inline-flex items-center justify-center gap-2 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-sm font-semibold rounded-lg transition-all"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                                    </svg>
+                                                    Use
+                                                </Link>
                                             </div>
                                         </div>
-                                    </Link>
+                                    </div>
                                 ))}
 
                                 {/* Create Custom Template Card */}
@@ -384,6 +484,16 @@ export default function Dashboard() {
                                                         Edit
                                                     </Link>
                                                     <button
+                                                        onClick={() => setPreviewResume(resume)}
+                                                        className="rounded-xl bg-cyan-500/10 border border-cyan-500/20 px-4 py-2.5 text-sm font-semibold text-cyan-400 hover:bg-cyan-500/20 transition-all"
+                                                        title="Preview Resume"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                        </svg>
+                                                    </button>
+                                                    <button
                                                         onClick={() => handleDelete(resume.id)}
                                                         className="rounded-xl bg-red-500/10 border border-red-500/20 px-4 py-2.5 text-sm font-semibold text-red-400 hover:bg-red-500/20 transition-all"
                                                     >
@@ -423,6 +533,117 @@ export default function Dashboard() {
                     )}
                 </div>
             </div>
+
+            {/* Preview Modal */}
+            {previewResume && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+                    onClick={(e) => e.target === e.currentTarget && setPreviewResume(null)}
+                >
+                    <div className="relative w-full max-w-5xl h-[90vh] bg-white/5 rounded-2xl border border-white/10 overflow-hidden flex flex-col">
+                        {/* Modal Header */}
+                        <div className="flex items-center justify-between px-6 py-4 bg-white/5 border-b border-white/10">
+                            <div>
+                                <h3 className="text-lg font-bold text-white">{previewResume.title}</h3>
+                                <p className="text-sm text-gray-400">Resume Preview</p>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <a
+                                    href={`/resumes/${previewResume.id}/pdf/download`}
+                                    className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white text-sm font-semibold rounded-xl transition-all"
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                    Download
+                                </a>
+                                <Link
+                                    href={route('resumes.edit', previewResume.id)}
+                                    className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-sm font-semibold rounded-xl transition-all"
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                    Edit
+                                </Link>
+                                <button
+                                    onClick={() => setPreviewResume(null)}
+                                    className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* PDF Preview */}
+                        <div className="flex-1 bg-gray-100">
+                            <iframe
+                                src={`/resumes/${previewResume.id}/pdf/preview`}
+                                className="w-full h-full"
+                                title={`Preview of ${previewResume.title}`}
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Template Preview Modal */}
+            {previewTemplate && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+                    onClick={(e) => e.target === e.currentTarget && setPreviewTemplate(null)}
+                >
+                    <div className="relative w-full max-w-6xl h-[90vh] bg-white/5 rounded-2xl border border-white/10 overflow-hidden flex flex-col">
+                        {/* Modal Header */}
+                        <div className="flex items-center justify-between px-6 py-4 bg-white/5 border-b border-white/10">
+                            <div>
+                                <h3 className="text-lg font-bold text-white">{previewTemplate.name} Template</h3>
+                                <p className="text-sm text-gray-400">Preview with sample data</p>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <Link
+                                    href={`/resumes/create?template=${previewTemplate.slug}`}
+                                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-sm font-semibold rounded-xl transition-all"
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                    </svg>
+                                    Use This Template
+                                </Link>
+                                <button
+                                    onClick={() => setPreviewTemplate(null)}
+                                    className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Template Preview with Sample Data */}
+                        <div className="flex-1 overflow-auto bg-gray-200 p-8">
+                            <div className="max-w-4xl mx-auto">
+                                <ResumePreview
+                                    resume={sampleResumeData}
+                                    customization={defaultCustomization}
+                                    templateSlug={previewTemplate.slug}
+                                    zoom={100}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Footer Note */}
+                        <div className="px-6 py-3 bg-white/5 border-t border-white/10 text-center">
+                            <p className="text-xs text-gray-500">
+                                This preview shows sample data. Your actual resume content will replace this when you create your resume.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
         </AuthenticatedLayout>
     );
 }

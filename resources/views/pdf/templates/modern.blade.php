@@ -297,10 +297,6 @@
             @endif
         </div>
 
-        <!-- Footer -->
-        <div class="footer">
-            Generated with CV Builder Pro
-        </div>
     </div>
 </body>
 </html>
