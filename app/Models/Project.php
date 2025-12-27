@@ -14,6 +14,7 @@ class Project extends Model
         'slug',
         'description',
         'image',
+        'image_url',
         'url',
         'github_url',
         'technologies',
@@ -49,12 +50,26 @@ class Project extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function getImageUrl(): ?string
+    /**
+     * Get the display image URL - prefers external URL, falls back to uploaded file
+     */
+    public function getDisplayImageUrl(): ?string
     {
+        if ($this->image_url) {
+            return $this->image_url;
+        }
         if ($this->image) {
             return asset('storage/' . $this->image);
         }
         return null;
+    }
+
+    /**
+     * @deprecated Use getDisplayImageUrl() instead
+     */
+    public function getImageUrl(): ?string
+    {
+        return $this->getDisplayImageUrl();
     }
 
     public function scopeVisible($query)

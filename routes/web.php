@@ -7,7 +7,7 @@ use App\Http\Controllers\BusinessCardController;
 use App\Http\Controllers\PublicProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ContactController;
-use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\PortfolioController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -89,15 +89,55 @@ Route::middleware('auth')->group(function () {
     Route::post('/messages/{message}/read', [ContactController::class, 'markAsRead'])->name('messages.read');
     Route::delete('/messages/{message}', [ContactController::class, 'destroy'])->name('messages.destroy');
 
-    // Projects routes
-    Route::get('/projects', [ProjectController::class, 'index'])->name('projects.index');
-    Route::get('/projects/create', [ProjectController::class, 'create'])->name('projects.create');
-    Route::post('/projects', [ProjectController::class, 'store'])->name('projects.store');
-    Route::get('/projects/{project}/edit', [ProjectController::class, 'edit'])->name('projects.edit');
-    Route::put('/projects/{project}', [ProjectController::class, 'update'])->name('projects.update');
-    Route::delete('/projects/{project}', [ProjectController::class, 'destroy'])->name('projects.destroy');
-    Route::post('/projects/{project}/image', [ProjectController::class, 'uploadImage'])->name('projects.image');
-    Route::post('/projects/order', [ProjectController::class, 'updateOrder'])->name('projects.order');
+    // Portfolio routes
+    Route::get('/portfolio', [PortfolioController::class, 'index'])->name('portfolio.index');
+    Route::put('/portfolio/settings', [PortfolioController::class, 'updateSettings'])->name('portfolio.settings.update');
+    Route::post('/portfolio/reorder', [PortfolioController::class, 'reorder'])->name('portfolio.reorder');
+    Route::post('/portfolio/branding', [PortfolioController::class, 'updateBranding'])->name('portfolio.branding.update');
+    Route::delete('/portfolio/branding', [PortfolioController::class, 'removeBranding'])->name('portfolio.branding.remove');
+
+    // Projects
+    Route::get('/portfolio/projects/create', [PortfolioController::class, 'createProject'])->name('portfolio.projects.create');
+    Route::post('/portfolio/projects', [PortfolioController::class, 'storeProject'])->name('portfolio.projects.store');
+    Route::get('/portfolio/projects/{project}/edit', [PortfolioController::class, 'editProject'])->name('portfolio.projects.edit');
+    Route::put('/portfolio/projects/{project}', [PortfolioController::class, 'updateProject'])->name('portfolio.projects.update');
+    Route::delete('/portfolio/projects/{project}', [PortfolioController::class, 'destroyProject'])->name('portfolio.projects.destroy');
+    Route::post('/portfolio/projects/{project}/image', [PortfolioController::class, 'uploadProjectImage'])->name('portfolio.projects.image');
+    Route::post('/portfolio/projects/order', [PortfolioController::class, 'updateProjectOrder'])->name('portfolio.projects.order');
+
+    // Testimonials
+    Route::post('/portfolio/testimonials', [PortfolioController::class, 'storeTestimonial'])->name('portfolio.testimonials.store');
+    Route::put('/portfolio/testimonials/{testimonial}', [PortfolioController::class, 'updateTestimonial'])->name('portfolio.testimonials.update');
+    Route::delete('/portfolio/testimonials/{testimonial}', [PortfolioController::class, 'destroyTestimonial'])->name('portfolio.testimonials.destroy');
+    Route::post('/portfolio/testimonials/{testimonial}/avatar', [PortfolioController::class, 'uploadTestimonialAvatar'])->name('portfolio.testimonials.avatar');
+
+    // Services
+    Route::post('/portfolio/services', [PortfolioController::class, 'storeService'])->name('portfolio.services.store');
+    Route::put('/portfolio/services/{service}', [PortfolioController::class, 'updateService'])->name('portfolio.services.update');
+    Route::delete('/portfolio/services/{service}', [PortfolioController::class, 'destroyService'])->name('portfolio.services.destroy');
+
+    // Certifications
+    Route::post('/portfolio/certifications', [PortfolioController::class, 'storeCertification'])->name('portfolio.certifications.store');
+    Route::put('/portfolio/certifications/{certification}', [PortfolioController::class, 'updateCertification'])->name('portfolio.certifications.update');
+    Route::delete('/portfolio/certifications/{certification}', [PortfolioController::class, 'destroyCertification'])->name('portfolio.certifications.destroy');
+    Route::post('/portfolio/certifications/{certification}/badge', [PortfolioController::class, 'uploadCertificationBadge'])->name('portfolio.certifications.badge');
+
+    // Awards
+    Route::post('/portfolio/awards', [PortfolioController::class, 'storeAward'])->name('portfolio.awards.store');
+    Route::put('/portfolio/awards/{award}', [PortfolioController::class, 'updateAward'])->name('portfolio.awards.update');
+    Route::delete('/portfolio/awards/{award}', [PortfolioController::class, 'destroyAward'])->name('portfolio.awards.destroy');
+    Route::post('/portfolio/awards/{award}/image', [PortfolioController::class, 'uploadAwardImage'])->name('portfolio.awards.image');
+
+    // Client Logos
+    Route::post('/portfolio/client-logos', [PortfolioController::class, 'storeClientLogo'])->name('portfolio.client-logos.store');
+    Route::put('/portfolio/client-logos/{clientLogo}', [PortfolioController::class, 'updateClientLogo'])->name('portfolio.client-logos.update');
+    Route::delete('/portfolio/client-logos/{clientLogo}', [PortfolioController::class, 'destroyClientLogo'])->name('portfolio.client-logos.destroy');
+    Route::post('/portfolio/client-logos/{clientLogo}/logo', [PortfolioController::class, 'uploadClientLogoImage'])->name('portfolio.client-logos.logo');
+
+    // Languages
+    Route::post('/portfolio/languages', [PortfolioController::class, 'storeLanguage'])->name('portfolio.languages.store');
+    Route::put('/portfolio/languages/{language}', [PortfolioController::class, 'updateLanguage'])->name('portfolio.languages.update');
+    Route::delete('/portfolio/languages/{language}', [PortfolioController::class, 'destroyLanguage'])->name('portfolio.languages.destroy');
 
     // Business Card PDF export
     Route::get('/business-cards/{businessCard}/pdf', [BusinessCardController::class, 'downloadPdf'])->name('business-cards.pdf');

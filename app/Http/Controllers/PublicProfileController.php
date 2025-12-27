@@ -26,18 +26,47 @@ class PublicProfileController extends Controller
             source: request()->get('src') === 'qr' ? 'qr_code' : 'direct'
         );
 
-        $publicResumes = $user->resumes()
-            ->where('is_public', true)
-            ->latest()
-            ->get();
+        // Get featured resume from portfolio settings
+        $featuredResume = $user->featuredResume;
 
-        $primaryCard = $user->primaryBusinessCard;
+        // Get featured business card from portfolio settings
+        $featuredCard = $user->featuredBusinessCard;
 
         // Get visible projects
         $projects = $user->projects()
             ->visible()
             ->ordered()
             ->get();
+
+        // Get testimonials
+        $testimonials = ($user->show_testimonials ?? true)
+            ? $user->testimonials()->visible()->ordered()->get()
+            : collect();
+
+        // Get services
+        $services = ($user->show_services ?? true)
+            ? $user->services()->visible()->ordered()->get()
+            : collect();
+
+        // Get certifications
+        $certifications = ($user->show_certifications ?? true)
+            ? $user->certifications()->visible()->ordered()->get()
+            : collect();
+
+        // Get awards
+        $awards = ($user->show_awards ?? true)
+            ? $user->awards()->visible()->ordered()->get()
+            : collect();
+
+        // Get client logos
+        $clientLogos = ($user->show_clients ?? true)
+            ? $user->clientLogos()->visible()->ordered()->get()
+            : collect();
+
+        // Get languages
+        $languages = ($user->show_languages ?? true)
+            ? $user->languages()->visible()->ordered()->get()
+            : collect();
 
         return Inertia::render('Public/Profile', [
             'profile' => [
@@ -47,6 +76,7 @@ class PublicProfileController extends Controller
                 'headline' => $user->headline,
                 'bio' => $user->bio,
                 'avatar' => $user->getAvatarUrl(),
+                'logo' => $user->getLogoUrl(),
                 'cover_image' => $user->getCoverImageUrl(),
                 'location' => $user->location,
                 'website' => $user->website,
@@ -55,17 +85,36 @@ class PublicProfileController extends Controller
                 'social_links' => $user->getSocialLinks(),
                 'custom_links' => $user->custom_links ?? [],
                 'theme' => $user->theme ?? 'default',
+                'portfolio_template' => $user->portfolio_template ?? 'executive',
                 'show_projects' => $user->show_projects ?? true,
                 'show_resumes' => $user->show_resumes ?? true,
                 'show_business_card' => $user->show_business_card ?? true,
                 'show_contact_form' => $user->show_contact_form ?? true,
                 'show_social_links' => $user->show_social_links ?? true,
+                'show_testimonials' => $user->show_testimonials ?? true,
+                'show_services' => $user->show_services ?? true,
+                'show_certifications' => $user->show_certifications ?? true,
+                'show_awards' => $user->show_awards ?? true,
+                'show_clients' => $user->show_clients ?? true,
+                'show_languages' => $user->show_languages ?? true,
+                'show_stats' => $user->show_stats ?? true,
+                'show_availability' => $user->show_availability ?? true,
+                'availability_status' => ($user->show_availability ?? true) ? $user->availability_status : null,
+                'availability_text' => ($user->show_availability ?? true) ? $user->availability_text : null,
+                'years_of_experience' => ($user->show_stats ?? true) ? $user->years_of_experience : null,
+                'projects_completed' => ($user->show_stats ?? true) ? $user->projects_completed : null,
+                'clients_served' => ($user->show_stats ?? true) ? $user->clients_served : null,
+                'video_intro_url' => $user->video_intro_url,
+                'skills_with_levels' => $user->skills_with_levels ?? [],
             ],
-            'resumes' => $publicResumes->map(fn ($resume) => [
-                'id' => $resume->id,
-                'title' => $resume->title,
-                'slug' => $resume->slug ?? $resume->id,
-            ]),
+            'featuredResume' => $featuredResume ? [
+                'id' => $featuredResume->id,
+                'title' => $featuredResume->title,
+                'personal_info' => $featuredResume->personal_info,
+                'work_experiences' => $featuredResume->workExperiences()->orderBy('start_date', 'desc')->get(),
+                'educations' => $featuredResume->educations()->orderBy('start_date', 'desc')->get(),
+                'skills' => $featuredResume->skills()->get(),
+            ] : null,
             'projects' => $projects->map(fn ($project) => [
                 'id' => $project->id,
                 'title' => $project->title,
@@ -77,16 +126,70 @@ class PublicProfileController extends Controller
                 'category' => $project->category,
                 'is_featured' => $project->is_featured,
             ]),
-            'businessCard' => $primaryCard ? [
-                'slug' => $primaryCard->slug,
-                'display_name' => $primaryCard->display_name,
-                'title' => $primaryCard->title,
-                'company' => $primaryCard->company,
-                'email' => $primaryCard->email,
-                'phone' => $primaryCard->phone,
-                'location' => $primaryCard->location,
-                'website' => $primaryCard->website,
+            'businessCard' => $featuredCard ? [
+                'id' => $featuredCard->id,
+                'slug' => $featuredCard->slug,
+                'display_name' => $featuredCard->display_name,
+                'title' => $featuredCard->title,
+                'company' => $featuredCard->company,
+                'email' => $featuredCard->email,
+                'phone' => $featuredCard->phone,
+                'location' => $featuredCard->location,
+                'website' => $featuredCard->website,
+                'avatar' => $featuredCard->avatar ? asset('storage/' . $featuredCard->avatar) : null,
+                'social_links' => $featuredCard->getSocialLinks(),
             ] : null,
+            'testimonials' => $testimonials->map(fn ($t) => [
+                'id' => $t->id,
+                'client_name' => $t->client_name,
+                'client_title' => $t->client_title,
+                'client_company' => $t->client_company,
+                'client_avatar' => $t->getClientAvatarUrl(),
+                'content' => $t->content,
+                'rating' => $t->rating,
+                'project_name' => $t->project_name,
+            ]),
+            'services' => $services->map(fn ($s) => [
+                'id' => $s->id,
+                'title' => $s->title,
+                'description' => $s->description,
+                'icon' => $s->icon,
+                'price_display' => $s->getPriceDisplay(),
+                'features' => $s->features ?? [],
+                'is_featured' => $s->is_featured,
+            ]),
+            'certifications' => $certifications->map(fn ($c) => [
+                'id' => $c->id,
+                'name' => $c->name,
+                'issuer' => $c->issuer,
+                'credential_id' => $c->credential_id,
+                'credential_url' => $c->credential_url,
+                'badge_image' => $c->getBadgeImageUrl(),
+                'issue_date' => $c->issue_date?->format('M Y'),
+                'expiry_date' => $c->expiry_date?->format('M Y'),
+                'is_valid' => $c->isValid(),
+            ]),
+            'awards' => $awards->map(fn ($a) => [
+                'id' => $a->id,
+                'title' => $a->title,
+                'issuer' => $a->issuer,
+                'description' => $a->description,
+                'image' => $a->getImageUrl(),
+                'date' => $a->date?->format('M Y'),
+                'url' => $a->url,
+            ]),
+            'clientLogos' => $clientLogos->map(fn ($cl) => [
+                'id' => $cl->id,
+                'name' => $cl->name,
+                'logo' => $cl->getLogoUrl(),
+                'url' => $cl->url,
+            ]),
+            'languages' => $languages->map(fn ($l) => [
+                'id' => $l->id,
+                'language' => $l->language,
+                'proficiency' => $l->proficiency,
+                'proficiency_label' => $l->getProficiencyLabel(),
+            ]),
         ]);
     }
 

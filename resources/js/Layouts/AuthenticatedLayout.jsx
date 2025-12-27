@@ -55,11 +55,11 @@ export default function AuthenticatedLayout({ header, children }) {
                                     Business Cards
                                 </NavLink>
                                 <NavLink
-                                    href={route('projects.index')}
-                                    active={route().current('projects.*')}
+                                    href={route('portfolio.index')}
+                                    active={route().current('portfolio.*')}
                                     className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-400 hover:text-white transition-colors"
                                 >
-                                    Projects
+                                    Portfolio
                                 </NavLink>
                                 <NavLink
                                     href={route('messages.index')}
@@ -213,10 +213,10 @@ export default function AuthenticatedLayout({ header, children }) {
                             Business Cards
                         </ResponsiveNavLink>
                         <ResponsiveNavLink
-                            href={route('projects.index')}
-                            active={route().current('projects.*')}
+                            href={route('portfolio.index')}
+                            active={route().current('portfolio.*')}
                         >
-                            Projects
+                            Portfolio
                         </ResponsiveNavLink>
                         <ResponsiveNavLink
                             href={route('messages.index')}
